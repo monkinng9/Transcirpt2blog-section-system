@@ -1,1 +1,2 @@
 webvtt-py
+langchain==0.3.12
