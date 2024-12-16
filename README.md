@@ -1,6 +1,6 @@
 # Transcript to Blog Post Generator
 
-This project implements an advanced transcript processing system that converts video/audio transcripts into well-structured blog posts using LLM-based sectioning techniques.
+This project, inspired by Sam Witteveen's video "New Summarization via In Context Learning with a New Class of Models," implements an advanced transcript processing system with Context-Aware capabilities. This system converts video/audio transcripts into well-structured blog posts using LLM-based sectioning techniques.
 
 ## Overview
 
