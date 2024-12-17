@@ -4,3 +4,4 @@
 .aider.chat.history.md
 .aider.tags.cache.v3
 *.vtt
+__pycache__
