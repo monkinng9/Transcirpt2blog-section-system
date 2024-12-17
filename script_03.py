@@ -1,5 +1,6 @@
-import sys
 from pathlib import Path
+import sys
+from config import INPUT_MARKDOWN, OUTPUT_MARKDOWN
 from docx import Document
 from docx.shared import Inches
 import markdown
@@ -42,12 +43,8 @@ def convert_markdown_to_word(input_file, output_file):
     print(f"Successfully converted {input_file} to {output_file}")
 
 def main():
-    if len(sys.argv) != 3:
-        print("Usage: python script_03.py input.md output.docx")
-        sys.exit(1)
-
-    input_file = sys.argv[1]
-    output_file = sys.argv[2]
+    input_file = INPUT_MARKDOWN
+    output_file = Path(input_file).stem + '.docx'
 
     if not Path(input_file).exists():
         print(f"Error: Input file {input_file} does not exist")
