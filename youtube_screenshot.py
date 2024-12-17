@@ -20,12 +20,11 @@ async def capture_youtube_screenshot(youtube_url, timestamp_str, output_filename
     
     try:
         # Try different format options in order of preference
-        # Allow all format AI!
         format_options = [
-            'bestvideo[ext=mp4][height<=1080][vcodec!*=av01]',
-            'bestvideo[ext=mp4][vcodec!*=av01]',
-            'best[ext=mp4][vcodec!*=av01]',
-            'best[ext=mp4]',  # Last resort: any MP4
+            'bestvideo[ext=mp4][height<=1080]',
+            'bestvideo[ext=mp4]',
+            'best[ext=mp4]',
+            'best'  # Last resort: any format
         ]
         
         cap = None
