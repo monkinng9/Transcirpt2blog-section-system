@@ -19,9 +19,13 @@ async def capture_youtube_screenshot(youtube_url, timestamp_str, output_filename
                           seconds=time_parts[2])
     
     try:
-        # Create a video capture object
-        cap = cap_from_youtube(youtube_url, 'best', start=target_time)
-        
+        # Create a video capture object, avoiding AV1 codec
+        cap = cap_from_youtube(youtube_url, '137/bestvideo[ext=mp4][vcodec!*=av01]', start=target_time)
+        if cap is None:
+            # Fallback to a more compatible format if first attempt fails
+            cap = cap_from_youtube(youtube_url, 'best[ext=mp4][vcodec!*=av01]', start=target_time)
+            if cap is None:
+                raise Exception("Failed to create video capture object")
         
         # Read the frame
         ret, frame = cap.read()
