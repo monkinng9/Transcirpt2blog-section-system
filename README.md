@@ -104,6 +104,9 @@ pip install -r requirements.txt
 ```bash
 pip install yt-dlp
 yt-dlp --write-subs --sub-format srt --convert-subs srt --skip-download "VIDEO_URL"
+
+# for auto sub
+# yt-dlp --write-auto-subs --sub-format srt --convert-subs srt --skip-download "VIDEO_URL" --output "transcript"
 ```
 
 2. Place your VTT transcript file according to the path specified in `config.py`

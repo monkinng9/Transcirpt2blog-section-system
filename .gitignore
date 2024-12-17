@@ -3,3 +3,4 @@
 .aider.input.history
 .aider.chat.history.md
 .aider.tags.cache.v3
+*.vtt
