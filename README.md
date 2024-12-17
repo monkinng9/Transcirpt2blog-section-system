@@ -100,19 +100,25 @@ pip install -r requirements.txt
 
 ## Usage
 
-1. Place your VTT transcript file according to the path specified in `config.py`
+1. Download Trascript with `yt-dlp`
+```bash
+pip install yt-dlp
+yt-dlp --write-subs --sub-format srt --convert-subs srt --skip-download "VIDEO_URL"
+```
 
-2. Generate the initial blog post:
+2. Place your VTT transcript file according to the path specified in `config.py`
+
+3. Generate the initial blog post:
 ```bash
 python script_01.py
 ```
 
-3. Add screenshots to the blog post:
+4. Add screenshots to the blog post:
 ```bash
 python script_02.py
 ```
 
-4. (Optional) Convert to Word document:
+5. (Optional) Convert to Word document:
 ```bash
 python script_03.py blog_with_screenshots.md output.docx
 ```
