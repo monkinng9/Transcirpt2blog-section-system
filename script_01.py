@@ -185,8 +185,6 @@ print(planning_result)
 with open(OUTPUT_JSON, 'w') as f:
     json.dump(planning_result, f, indent=2)
 
-breakpoint()
-
 # Generate Each Section
 section_prompt = PromptTemplate(
     input_variables=["overall_summ", "section_plan", "previous_summary", "current_transcript"],
