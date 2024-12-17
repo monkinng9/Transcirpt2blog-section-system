@@ -1,6 +1,6 @@
 # File paths
 INPUT_VTT = "transcript.vtt" # or "transcript.en.vtt"
-INPUT_MARKDOWN = "/home/beyondbegin/Downloads/generated_blog.md"
+INPUT_MARKDOWN = "generated_blog.md"
 OUTPUT_MARKDOWN = "blog_with_screenshots.md"
 OUTPUT_JSON = "blog_outline.json"
 SCREENSHOTS_DIR = "screenshots"
