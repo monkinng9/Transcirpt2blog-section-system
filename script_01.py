@@ -7,6 +7,7 @@ import webvtt
 
 from config import *
 
+# yt-dlp --write-subs --sub-format srt --convert-subs srt --skip-download "VIDEO_URL" add to python program AI!
 # Setup Config
 config = {
     "input": INPUT_VTT
