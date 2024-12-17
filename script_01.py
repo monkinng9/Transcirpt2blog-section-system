@@ -4,10 +4,18 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 import webvtt
 
+
+from config import *
+
+# Setup Config
+config = {
+    "input": INPUT_VTT
+}
+
 # Prepare Transcript
 ## Read and parse the VTT file
 captions = []
-for caption in webvtt.read('transcript.vtt'):
+for caption in webvtt.read(config['input']):
     captions.append({
         "start": caption.start,
         "end": caption.end,
@@ -105,50 +113,78 @@ pro_llm = ChatGoogleGenerativeAI(
     max_retries=2,
 )
 
-# Prompt to generate the blog outline
-planning_prompt = PromptTemplate(
-    template="""
-    Analyze the following transcript and provide a detailed outline for a blog post. 
-    Identify key themes, create section titles, and summarize each section. Include start and end times
-    for each section to retain context.
+def process_transcript_batch(transcript_text, previous_context="", batch_number=1):
+    planning_prompt = PromptTemplate(
+        template="""
+        Analyze the following transcript segment and provide an outline for blog sections. Aim for a comprehensive summary of at least 200 words across all sections. You may create more than 4 sections if the content warrants it for better organization and coverage.
 
-    Transcript: {transcript}
+        Consider the previous context if provided.
 
-    {format_instructions}
+        Previous Context: {previous_context}
+        Current Transcript: {transcript}
 
-    Return a valid JSON object that matches this exact format:
-    {{
-        "outline": [
-            {{
-                "title": "Section Title",
-                "summary": "Section summary text",
-                "start_time": "00:00:00",
-                "end_time": "00:30:33"
-            }}
-        ]
-    }}
-    """,
-    input_variables=["transcript"],
-    partial_variables={"format_instructions": parser.get_format_instructions()},
-)
+        Return a valid JSON object with sections that matches this format:
+        {{
+            "outline": [
+                {{
+                    "title": "Section Title",
+                    "summary": "Section summary text (aim for substantial summaries contributing to the 200+ word total)",
+                    "start_time": "00:00:00",
+                    "end_time": "00:30:33"
+                }},
+                        {{
+                    "title": "Another Section Title",
+                    "summary": "More summary text to reach the 200+ word goal.",
+                    "start_time": "00:30:34",
+                    "end_time": "01:00:00"
+                }},
+                // ... more sections as needed
+            ]
+        }}
 
-# Create the chain
-chain = planning_prompt | pro_llm | parser
+        Ensure the combined summaries of all sections are at least 200 words long, providing a detailed overview of the transcript segment. Prioritize clarity, accuracy, and comprehensive coverage of the key topics discussed.  If the transcript is short, still aim for detailed summaries within each section to meet the word count, by elaborating on the key points.
+        """,
+        input_variables=["transcript", "previous_context"],
+        partial_variables={"format_instructions": parser.get_format_instructions()},
+    )
 
-# Invoke the chain
-planning_result = chain.invoke(
-    {
-        "transcript": formatted_text_and_ts  # Replace with your transcript input
-    }
-)
+    chain = planning_prompt | pro_llm | parser
+    return chain.invoke({
+        "transcript": transcript_text,
+        "previous_context": previous_context
+    })
+
+# Process transcript in batches
+batch_size = len(captions) // TRANSCRIPT_BATCH_SIZE
+caption_batches = [captions[i:i + batch_size] for i in range(0, len(captions), batch_size)]
+previous_context = ""
+all_sections = []
+
+for i, batch in enumerate(caption_batches, 1):
+    print(f"\nProcessing batch {i}/{len(caption_batches)}")
+    batch_text = captions_to_long_text_with_ts(batch)
+    
+    batch_result = process_transcript_batch(
+        batch_text, 
+        previous_context,
+        i
+    )
+    
+    all_sections.extend(batch_result["outline"])
+    # Update context with summaries from this batch
+    previous_context = "\n".join(section["summary"] for section in batch_result["outline"])
+
+planning_result = {"outline": all_sections}
 
 # Print the generated blog outline plan
 print("==== Generated Blog Outline ====")
 print(planning_result)
 
 # Save the planning result to a JSON file
-with open('blog_outline.json', 'w') as f:
+with open(OUTPUT_JSON, 'w') as f:
     json.dump(planning_result, f, indent=2)
+
+breakpoint()
 
 # Generate Each Section
 section_prompt = PromptTemplate(

@@ -74,13 +74,47 @@ The system generates:
 - Google API credentials
 - Required packages listed in `requirements.txt`
 
+## Setup and Configuration
+
+1. Install required packages:
+```bash
+pip install -r requirements.txt
+```
+
+2. Configure your Google API key:
+   - Get a Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+   - Set it as an environment variable:
+   ```bash
+   export GOOGLE_API_KEY='your-api-key-here'
+   ```
+   - Or add it to your ~/.bashrc for persistence:
+   ```bash
+   echo 'export GOOGLE_API_KEY="your-api-key-here"' >> ~/.bashrc
+   source ~/.bashrc
+   ```
+
+3. Configure settings in `config.py`:
+   - Adjust file paths (INPUT_VTT, INPUT_MARKDOWN, etc.)
+   - Set batch sizes for processing
+   - Update YouTube URL
+
 ## Usage
 
-1. Place your transcript file as `transcript.vtt` in the project directory
-2. Set your Google API key in environment variables
-3. Run the script:
+1. Place your VTT transcript file according to the path specified in `config.py`
+
+2. Generate the initial blog post:
 ```bash
 python script_01.py
+```
+
+3. Add screenshots to the blog post:
+```bash
+python script_02.py
+```
+
+4. (Optional) Convert to Word document:
+```bash
+python script_03.py blog_with_screenshots.md output.docx
 ```
 
 ## Output Files
