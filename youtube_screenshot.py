@@ -2,7 +2,7 @@ import cv2
 import asyncio
 from datetime import timedelta
 from cap_from_youtube import cap_from_youtube
-
+# Change to download 720p youtube video and capture by timestamp AI!
 async def capture_youtube_screenshot(youtube_url, timestamp_str, output_filename):
     """
     Capture a screenshot from a YouTube video at a specific timestamp
@@ -19,22 +19,11 @@ async def capture_youtube_screenshot(youtube_url, timestamp_str, output_filename
                           seconds=time_parts[2])
     
     try:
-        # Try different format options in order of preference
-        format_options = [
-            'bestvideo[ext=mp4][height<=1080]',
-            'bestvideo[ext=mp4]',
-            'best[ext=mp4]',
-            'best'  # Last resort: any format
-        ]
+        # Create a video capture object
+        cap = cap_from_youtube(youtube_url, 'best', start=target_time)
         
-        cap = None
-        for format_option in format_options:
-            cap = cap_from_youtube(youtube_url, format_option, start=target_time)
-            if cap is not None:
-                break
-                
-        if cap is None:
-            raise Exception("Failed to create video capture object - no compatible format found")
+        # Add small delay for accuracy
+        await asyncio.sleep(0.5)
         
         # Read the frame
         ret, frame = cap.read()
