@@ -1,4 +1,5 @@
 import os
+import subprocess
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
@@ -7,7 +8,24 @@ import webvtt
 
 from config import *
 
-# yt-dlp --write-subs --sub-format srt --convert-subs srt --skip-download "VIDEO_URL" add to python program AI!
+def download_subtitles(video_url, output_dir="."):
+    """Download subtitles from a YouTube video using yt-dlp"""
+    try:
+        cmd = [
+            "yt-dlp",
+            "--write-subs",
+            "--sub-format", "srt",
+            "--convert-subs", "srt",
+            "--skip-download",
+            "--output", f"{output_dir}/%(title)s.%(ext)s",
+            video_url
+        ]
+        subprocess.run(cmd, check=True)
+        return True
+    except subprocess.CalledProcessError:
+        print("Error downloading subtitles")
+        return False
+
 # Setup Config
 config = {
     "input": INPUT_VTT
