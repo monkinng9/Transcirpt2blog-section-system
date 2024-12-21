@@ -127,8 +127,8 @@ def calculate_optimal_batch_size(captions: List[Dict], min_batch_size: int = 50)
     total_length = sum(len(caption["text"]) for caption in captions)
     avg_caption_length = total_length / len(captions)
     
-    # Target ~4000 characters per batch (adjustable based on model context window)
-    target_chars_per_batch = 4000
+    # Target ~10000 characters per batch (adjustable based on model context window)
+    target_chars_per_batch = 10000
     optimal_size = max(
         min_batch_size,
         math.ceil(target_chars_per_batch / avg_caption_length)
