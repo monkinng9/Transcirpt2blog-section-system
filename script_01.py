@@ -121,7 +121,7 @@ parser = JsonOutputParser(pydantic_object=BlogOutline)
 
 # Initialize the model
 pro_llm = ChatGoogleGenerativeAI(
-    model="gemini-1.5-flash",
+    model="gemini-1.5-pro",
     temperature=0.7,
     max_tokens=None,
     timeout=None,
