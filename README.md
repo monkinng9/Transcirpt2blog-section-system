@@ -109,12 +109,70 @@ The project uses:
 - Pydantic for structured data handling
 - WebVTT for transcript parsing
 
-## Output
+## Output Files and Artifacts
 
-The system generates:
-- A structured blog post in Markdown format
-- JSON outline of the content structure
-- Timestamped sections for easy reference
+### Generated Content Files
+
+- `generated_blog.md`
+  - Primary output file containing the full blog post
+  - Includes:
+    * Comprehensive overview section
+    * Timestamped content sections
+    * Final thoughts/conclusion
+  - Formatted in markdown for easy editing and publishing
+
+- `blog_with_screenshots.md`
+  - Enhanced version of the blog post
+  - Includes visual elements:
+    * Embedded screenshots from the source video
+    * Thumbnail image
+    * Preserves all formatting from `generated_blog.md`
+
+### Metadata and Supporting Files
+
+- `blog_outline.json`
+  - Structured JSON representation of the blog content
+  - Contains:
+    * Section titles
+    * Start and end timestamps
+    * Section summaries
+  - Useful for programmatic processing or further analysis
+
+### Screenshot Artifacts
+
+- `screenshots/`
+  - Directory containing all generated screenshots
+  - Includes:
+    * Individual section screenshots
+    * Video thumbnail
+  - Naming convention: 
+    * Section screenshots: `screenshot_HH_MM_SS.png`
+    * Thumbnail: `thumbnail.png`
+
+### Logging and Debug Files
+
+- Potential additional debug logs may be generated during processing
+- Check console output for detailed processing information
+
+### File Relationships
+
+```
+output/
+├── generated_blog.md
+├── blog_with_screenshots.md
+├── blog_outline.json
+└── screenshots/
+    ├── thumbnail.png
+    ├── screenshot_00_05_10.png
+    └── ...
+```
+
+### Recommended Workflow
+
+1. Review `generated_blog.md` for initial content
+2. Check `blog_outline.json` for structural insights
+3. Verify screenshots in the `screenshots/` directory
+4. Use `blog_with_screenshots.md` for final publication
 
 ## Requirements
 
@@ -148,64 +206,74 @@ pip install -r requirements.txt
 
 ## Usage
 
-1. Download Trascript with `yt-dlp`
-```bash
-pip install yt-dlp
-yt-dlp --write-subs --sub-format srt --convert-subs srt --skip-download "VIDEO_URL"
+### Prerequisites
 
-# for auto sub
-# yt-dlp --write-auto-subs --sub-format srt --convert-subs srt --skip-download "VIDEO_URL" --output "transcript"
-```
+- Python 3.8+
+- Google Cloud account with Gemini API access
+- Required Python packages (install via `pip install -r requirements.txt`)
 
-2. Place your VTT transcript file according to the path specified in `config.py`
+### Setup
 
-3. Generate the initial blog post:
-```bash
-python script_01.py
-```
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/monkinng9/Transcript2blog-sectioning-technique.git
+   cd Transcript2blog-sectioning-technique.git
+   ```
 
-4. Add screenshots to the blog post:
-```bash
-python script_02.py
-```
+2. **Install Dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-5. (Optional) Convert to Word document:
-```bash
-python script_03.py blog_with_screenshots.md output.docx
-```
+3. **Set Up Google API Key**
+   - Obtain a Gemini API key from Google Cloud Console
+   - Set the environment variable:
+     ```bash
+     export GOOGLE_API_KEY='your_api_key_here'
+     ```
 
-## Screenshot Capture Optimization
+### Configuration
 
-### Concurrent Processing
-The screenshot capture mechanism has been optimized for high-performance, parallel processing:
+Edit `config.py` to customize your blog generation:
 
-- **Concurrent Capture**: Supports simultaneous screenshot extraction from YouTube videos
-- **Controlled Concurrency**: Limits concurrent captures to prevent system overload
-- **Robust Error Handling**: 
-  - Implements automatic retry mechanism
-  - Provides detailed logging for debugging
-  - Graceful error management
+- `INPUT`: Choose between VTT or SRT input file
+- `MAX_SECTIONS`: Limit the number of blog sections
+- `MIN_SECTION_DURATION`: Minimum duration for a section
+- `TARGET_SECTION_DURATION`: Ideal section duration
+- `YOUTUBE_URL`: Source video URL for screenshot generation
 
-### Performance Features
-- Maximum 3 concurrent screenshot captures
-- Up to 3 retry attempts for each screenshot
-- Configurable semaphore-based concurrency control
-- Detailed logging with timestamps and error levels
+### Running the Tool
 
-### Usage Example
-```python
-timestamps = [("00:00:10", "screenshot1.jpg"), ("00:00:20", "screenshot2.jpg")]
-results = await process_screenshots_batch("https://youtube.com/watch?v=xxx", timestamps)
-```
+1. **Prepare Transcript**
+   - Download subtitles using `yt-dlp`:
+     ```bash
+     yt-dlp --write-auto-subs --sub-format srt --convert-subs srt --skip-download "YOUR_YOUTUBE_URL"
+     ```
 
-## Output Files
+2. **Generate Blog**
+   ```bash
+   python script_01.py  # Generate blog sections
+   python script_02.py  # Add screenshots
+   python script_03.py  # Convert blog to Word document
+   ```
 
-- `generated_blog.md`: The final blog post
-- `blog_outline.json`: Structured outline of the content
+### Output
 
-## Architecture Benefits
+- `generated_blog.md`: Generated blog post
+- `blog_outline.json`: Structured blog section metadata
+- `blog_with_screenshots.md`: Blog with embedded screenshots
+- `screenshots/`: Directory containing generated screenshots
+- `blog_with_screenshots.docx`: Blog with embedded screenshots in Word document format
 
-- **Improved Context**: Maintains document-wide understanding
-- **Better Coherence**: Generates more cohesive content
-- **Efficient Processing**: Optimizes LLM token usage
-- **Scalability**: Handles long-form content effectively
+### Customization Tips
+
+- Adjust `TRANSCRIPT_BATCH_SIZE` for different processing granularity
+- Modify prompt templates in scripts for different writing styles
+- Experiment with Gemini model parameters for varied outputs
+
+### Troubleshooting
+
+- Ensure correct API key and permissions
+- Check transcript file format (VTT/SRT)
+- Verify YouTube URL accessibility
+- Review console output for detailed processing information
