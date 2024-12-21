@@ -360,31 +360,27 @@ for i, section_plan in enumerate(sections):
     start_time = section_plan['start_time']
     end_time = section_plan['end_time']
 
-    # Extract the relevant transcript excerpt based on start and end times
-    current_transcript = ""
-    for caption in captions:
-        if start_time <= caption["start"] <= end_time:
-            current_transcript += caption["text"].strip() + " "
+    current_transcript = " ".join(
+        caption["text"].strip()
+        for caption in captions
+        if start_time <= caption["start"] <= end_time
+    )
 
-    # Create the chain for section generation
     chain = section_prompt | flash_llm | StrOutputParser()
     
     section_result = chain.invoke({
         "overall_summ": overall_summary,
         "section_plan": json.dumps(section_plan),
-        "previous_summary": previous_summary,
+        "previous_summary": " ".join(blog_section["content"] for blog_section in blog_sections[-2:]),
         "current_transcript": current_transcript
     })
 
-    # Store title and content in a dictionary
     blog_sections.append({
         "title": section_plan['title'],
         "content": section_result,
         "start_time": start_time,
         "end_time": end_time
     })
-
-    previous_summary += section_result + " \n\n"
 
 # Generate final summary
 final_summary_prompt = ChatPromptTemplate.from_messages([
