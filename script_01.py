@@ -1,10 +1,12 @@
 import os
 import subprocess
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
+from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 import webvtt
-
+import concurrent.futures
+from typing import List, Dict
+import math
 
 from config import *
 
@@ -88,9 +90,6 @@ print(overview_sum_content)
 
 # Planning Section
 from pydantic import BaseModel, Field
-from langchain_core.output_parsers import JsonOutputParser
-from langchain_core.prompts import PromptTemplate
-import json
 
 # Define the schema for the output using Pydantic's BaseModel
 class Section(BaseModel):
@@ -113,6 +112,42 @@ pro_llm = ChatGoogleGenerativeAI(
     timeout=None,
     max_retries=2,
 )
+
+def calculate_optimal_batch_size(captions: List[Dict], min_batch_size: int = 50) -> int:
+    """
+    Calculate optimal batch size based on caption length and minimum batch size.
+    
+    Args:
+        captions: List of caption dictionaries
+        min_batch_size: Minimum number of captions per batch
+        
+    Returns:
+        Optimal batch size
+    """
+    total_length = sum(len(caption["text"]) for caption in captions)
+    avg_caption_length = total_length / len(captions)
+    
+    # Target ~4000 characters per batch (adjustable based on model context window)
+    target_chars_per_batch = 4000
+    optimal_size = max(
+        min_batch_size,
+        math.ceil(target_chars_per_batch / avg_caption_length)
+    )
+    return min(optimal_size, len(captions))
+
+def process_batch_with_context(batch_info):
+    """
+    Process a single batch with its context information.
+    
+    Args:
+        batch_info: Tuple containing (batch, previous_context, batch_number)
+        
+    Returns:
+        Processed batch results
+    """
+    batch, previous_context, batch_number = batch_info
+    batch_text = captions_to_long_text_with_ts(batch)
+    return process_transcript_batch(batch_text, previous_context, batch_number)
 
 def process_transcript_batch(transcript_text, previous_context="", batch_number=1):
     planning_prompt = PromptTemplate(
@@ -156,24 +191,40 @@ def process_transcript_batch(transcript_text, previous_context="", batch_number=
     })
 
 # Process transcript in batches
-batch_size = len(captions) // TRANSCRIPT_BATCH_SIZE
+batch_size = calculate_optimal_batch_size(captions)
 caption_batches = [captions[i:i + batch_size] for i in range(0, len(captions), batch_size)]
 previous_context = ""
 all_sections = []
 
-for i, batch in enumerate(caption_batches, 1):
-    print(f"\nProcessing batch {i}/{len(caption_batches)}")
-    batch_text = captions_to_long_text_with_ts(batch)
+# Set up parallel processing
+max_workers = min(4, len(caption_batches))  # Limit max workers to avoid API rate limits
+with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+    # Prepare batch information for parallel processing
+    batch_infos = [
+        (batch, previous_context, i+1) 
+        for i, batch in enumerate(caption_batches)
+    ]
     
-    batch_result = process_transcript_batch(
-        batch_text, 
-        previous_context,
-        i
-    )
+    # Process batches in parallel
+    future_to_batch = {
+        executor.submit(process_batch_with_context, batch_info): batch_info[2]
+        for batch_info in batch_infos
+    }
     
-    all_sections.extend(batch_result["outline"])
-    # Update context with summaries from this batch
-    previous_context = "\n".join(section["summary"] for section in batch_result["outline"])
+    # Collect results in order
+    for future in concurrent.futures.as_completed(future_to_batch):
+        batch_num = future_to_batch[future]
+        try:
+            batch_result = future.result()
+            print(f"\nCompleted batch {batch_num}/{len(caption_batches)}")
+            all_sections.extend(batch_result["outline"])
+            # Update context with summaries from this batch
+            previous_context = "\n".join(
+                section["summary"] for section in batch_result["outline"]
+            )
+        except Exception as e:
+            print(f"Batch {batch_num} generated an exception: {str(e)}")
+            continue
 
 planning_result = {"outline": all_sections}
 
@@ -276,5 +327,3 @@ with open('generated_blog.md', 'w', encoding='utf-8') as f:
     f.write("\n")
 
 print("Blog post has been written to generated_blog.md")
-
-
