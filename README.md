@@ -4,54 +4,102 @@ This project, inspired by Sam Witteveen's video "New Summarization via In Contex
 
 ## Overview
 
-The system uses a novel sectioning approach to process long-form transcripts efficiently while maintaining context and coherence. It leverages Google's Gemini models to generate high-quality blog content through a multi-stage process.
+The system implements an advanced batch-processing approach for transforming long-form transcripts into structured blog content. It uses Google's Gemini models (Flash and Pro) in a multi-stage pipeline that ensures both efficiency and coherence. The system is particularly notable for its sophisticated batch processing and section optimization capabilities.
+
+The process begins with flexible input handling (supporting both VTT and SRT formats) and proceeds through a carefully orchestrated series of stages. Each stage maintains temporal context and content relationships while optimizing for processing efficiency. The system employs dynamic batch sizing based on content characteristics and implements an importance-based section selection process to ensure the most relevant content is preserved in the final output.
+
+Key innovations include:
+- Parallel processing capabilities with context preservation
+- Dynamic optimization of content sections based on configurable parameters
+- Dual-model approach using Gemini Flash for general content and Gemini Pro for detailed planning
+- Comprehensive timestamp integration throughout the process
+
+The result is a system that can reliably transform long-form transcripts into well-structured, coherent blog posts while maintaining the temporal relationships present in the original content. The final output includes an overview, optimized content sections, and a concluding summary, all with preserved timestamp references for easy alignment with the source material.
 
 ```mermaid
 graph TD
-    A[Input Transcript] --> B[Topic Identification]
-    B --> C[Section Planning]
-    C --> D[Context-Aware Processing]
-    D --> E[Section Generation]
-    E --> F[Final Blog Post]
-
-    subgraph "Sectioning Process"
-        B
-        C
-        D
-        E
+    A[Input File<br>.vtt/.srt] --> B[Transcript Processing]
+    B --> |Formatted Text| C[Overview Generation]
+    B --> |Timestamped Text| D[Batch Processing]
+    
+    subgraph "Batch Processing System"
+        D --> E[Calculate Optimal<br>Batch Size]
+        E --> F[Process Batches]
+        F --> |with context| G[Section Planning]
+        G --> H[Section Optimization]
     end
-
-    style B fill:#f9f,stroke:#333
-    style C fill:#bbf,stroke:#333
-    style D fill:#bfb,stroke:#333
-    style E fill:#fbf,stroke:#333
+    
+    subgraph "Content Generation"
+        C --> |Overall Summary| I[Section Generation]
+        H --> |Optimized Sections| I
+        I --> J[Generate Final Summary]
+    end
+    
+    I --> K[Final Blog Post]
+    J --> K
+    
+    style A fill:#f9f,stroke:#333
+    style B fill:#bbf,stroke:#333
+    style C fill:#bfb,stroke:#333
+    style D fill:#fbf,stroke:#333
+    style H fill:#ffd,stroke:#333
+    style K fill:#dff,stroke:#333
 ```
 
 ## Key Features
 
-- **Smart Sectioning**: Automatically identifies natural topic boundaries in the transcript
-- **Context-Aware Processing**: Maintains full document context while generating section summaries
-- **Structured Output**: Generates well-organized blog posts with:
+- **Multi-Format Support**: Handles both VTT and SRT transcript formats
+- **Batch Processing System**: 
+  - Dynamic batch size calculation based on content length
+  - Maintains context between batches for coherent processing
+  - Parallel processing capabilities
+- **Smart Section Optimization**:
+  - Configurable maximum section limit
+  - Importance-based section selection
+  - Duration and content-aware optimization
+- **Context-Aware Generation**:
+  - Maintains previous context across batch processing
+  - Ensures coherent transitions between sections
+  - Preserves timestamp information throughout
+- **Comprehensive Content Structure**:
   - Overview summary
-  - Timestamped sections
+  - Optimized, timestamped sections
   - Final thoughts and conclusions
 
 ## How It Works
 
-1. **Transcript Processing**
-   - Parses VTT format transcripts
-   - Maintains timestamp information
-   - Converts to processable text format
+1. **Initial Processing**
+   - Parses input file (VTT/SRT)
+   - Extracts timestamps and text
+   - Creates two formats: plain text and timestamped text
 
-2. **Planning Phase**
-   - Generates comprehensive overview
-   - Creates structured section outline
-   - Identifies key themes and transitions
+2. **Overview Generation**
+   - Uses Gemini Flash model to create comprehensive summary
+   - Processes initial content chunk (up to 10,000 characters)
+   - Sets context for subsequent section generation
 
-3. **Content Generation**
-   - Processes each section with full context
+3. **Batch Processing & Planning**
+   - Calculates optimal batch size based on content length
+   - Processes transcript in manageable chunks
+   - Maintains context between consecutive batches
+   - Generates section outlines with timestamps
+
+4. **Section Optimization**
+   - Evaluates sections based on importance metrics
+   - Considers content length and duration
+   - Optimizes to meet configured maximum section limit
+   - Preserves most significant content
+
+5. **Content Generation**
+   - Processes each optimized section with full context
+   - Incorporates overall summary and previous section content
    - Maintains coherence between sections
-   - Includes timestamp references
+   - Generates final summary to conclude the blog post
+
+6. **Output Generation**
+   - Creates structured markdown file
+   - Includes overview, timestamped sections, and conclusions
+   - Preserves all temporal references for content alignment
 
 ## Technical Implementation
 
