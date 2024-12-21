@@ -75,7 +75,7 @@ flash_llm = ChatGoogleGenerativeAI(
     model="gemini-1.5-flash",
     temperature=0.7,
     max_tokens=None,
-    timeout=None,
+    timeout=60,
     max_retries=2,
 )
 
@@ -293,7 +293,6 @@ def optimize_sections(sections):
     
     print(f"\n==== Optimization Complete ====")
     print(f"Total sections after optimization: {len(optimized_sections)}")
-    
     return optimized_sections
 
 # Process transcript in batches
