@@ -1,9 +1,0 @@
-webvtt-py
-langchain==0.3.12
-langchain-google-genai
-python-docx
-markdown
-beautifulsoup4
-opencv-python
-cap-from-youtube
-pydantic

@@ -1,7 +1,9 @@
-webvtt-py==0.4.6
-pysrt==1.1.2
-langchain==0.1.0
-langchain-google-genai==0.1.0
-google-generativeai==0.3.1
-pydantic==2.6.1
-typing-extensions==4.9.0
+webvtt-py
+langchain==0.3.12
+langchain-google-genai
+python-docx
+markdown
+beautifulsoup4
+opencv-python
+cap-from-youtube
+pydantic
