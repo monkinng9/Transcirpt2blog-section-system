@@ -18,32 +18,47 @@ The result is a system that can reliably transform long-form transcripts into we
 
 ```mermaid
 graph TD
-    A[Input File<br>.vtt/.srt] --> B[Transcript Processing]
-    B --> |Formatted Text| C[Overview Generation]
-    B --> |Timestamped Text| D[Batch Processing]
+    A[Input File<br>.vtt/.srt] --> B[Parse Captions]
+    B --> C[Format Captions]
+    
+    C --> D[Plain Text Format]
+    C --> E[Timestamped Format]
+    
+    D --> F[Overview Generation]
+    E --> G[Batch Processing System]
     
     subgraph "Batch Processing System"
-        D --> E[Calculate Optimal<br>Batch Size]
-        E --> F[Process Batches]
-        F --> |with context| G[Section Planning]
-        G --> H[Section Optimization]
+        G --> H[Calculate Optimal<br>Batch Size]
+        H --> I[Process Batches]
+        I --> J[Context Management]
+        J --> K[Section Planning]
+        K --> L[Section Optimization]
+        
+        subgraph "Optimization Process"
+            L --> M[Calculate Section<br>Metrics]
+            M --> N[Sort by Importance]
+            N --> O[Select Top Sections]
+            O --> P[Re-sort by Time]
+        end
     end
     
-    subgraph "Content Generation"
-        C --> |Overall Summary| I[Section Generation]
-        H --> |Optimized Sections| I
-        I --> J[Generate Final Summary]
+    subgraph "Content Generation Pipeline"
+        F --> |Overall Summary| Q[Section Generation]
+        P --> |Optimized Sections| Q
+        Q --> R[Previous Context<br>Management]
+        R --> |Context| Q
+        Q --> S[Generate Final<br>Summary]
     end
     
-    I --> K[Final Blog Post]
-    J --> K
+    Q --> T[Blog Post Assembly]
+    S --> T
     
     style A fill:#f9f,stroke:#333
     style B fill:#bbf,stroke:#333
-    style C fill:#bfb,stroke:#333
-    style D fill:#fbf,stroke:#333
-    style H fill:#ffd,stroke:#333
-    style K fill:#dff,stroke:#333
+    style F fill:#bfb,stroke:#333
+    style G fill:#fbf,stroke:#333
+    style L fill:#ffd,stroke:#333
+    style T fill:#dff,stroke:#333
 ```
 
 ## Key Features
