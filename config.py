@@ -10,4 +10,4 @@ TRANSCRIPT_BATCH_SIZE = 3  # Number of batches to split transcript into
 SCREENSHOT_BATCH_SIZE = 5  # Number of screenshots to process concurrently
 
 # YouTube settings
-YOUTUBE_URL = '...'
+YOUTUBE_URL = 'https://www.youtube.com/watch?v=klDJJFB6HAE'

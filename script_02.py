@@ -1,7 +1,7 @@
 import re
 import os
 import asyncio
-from youtube_screenshot import capture_youtube_screenshot
+from youtube_screenshot import capture_youtube_screenshot, process_screenshots_batch
 
 def extract_start_times(file_path):
     """Extract timestamps from markdown headings"""
@@ -18,13 +18,13 @@ def extract_start_times(file_path):
 
 async def process_screenshot_batch(youtube_url, timestamps, screenshots_dir):
     """Process a batch of screenshots concurrently"""
-    tasks = []
+    timestamp_pairs = []
     for timestamp in timestamps:
         screenshot_name = f"screenshot_{timestamp.replace(':', '_')}.png"
         screenshot_path = os.path.join(screenshots_dir, screenshot_name)
-        task = capture_youtube_screenshot(youtube_url, timestamp, screenshot_path)
-        tasks.append(task)
-    return await asyncio.gather(*tasks)
+        timestamp_pairs.append((timestamp, screenshot_path))
+    
+    return await process_screenshots_batch(youtube_url, timestamp_pairs)
 
 async def inject_screenshots_to_markdown(input_file, output_file, youtube_url):
     """Process markdown file and inject screenshots above each timestamped section"""

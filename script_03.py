@@ -43,7 +43,7 @@ def convert_markdown_to_word(input_file, output_file):
     print(f"Successfully converted {input_file} to {output_file}")
 
 def main():
-    input_file = INPUT_MARKDOWN
+    input_file = OUTPUT_MARKDOWN
     output_file = Path(input_file).stem + '.docx'
 
     if not Path(input_file).exists():
