@@ -126,6 +126,30 @@ python script_02.py
 python script_03.py blog_with_screenshots.md output.docx
 ```
 
+## Screenshot Capture Optimization
+
+### Concurrent Processing
+The screenshot capture mechanism has been optimized for high-performance, parallel processing:
+
+- **Concurrent Capture**: Supports simultaneous screenshot extraction from YouTube videos
+- **Controlled Concurrency**: Limits concurrent captures to prevent system overload
+- **Robust Error Handling**: 
+  - Implements automatic retry mechanism
+  - Provides detailed logging for debugging
+  - Graceful error management
+
+### Performance Features
+- Maximum 3 concurrent screenshot captures
+- Up to 3 retry attempts for each screenshot
+- Configurable semaphore-based concurrency control
+- Detailed logging with timestamps and error levels
+
+### Usage Example
+```python
+timestamps = [("00:00:10", "screenshot1.jpg"), ("00:00:20", "screenshot2.jpg")]
+results = await process_screenshots_batch("https://youtube.com/watch?v=xxx", timestamps)
+```
+
 ## Output Files
 
 - `generated_blog.md`: The final blog post
