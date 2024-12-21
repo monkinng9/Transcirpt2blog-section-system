@@ -5,6 +5,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 import webvtt
+import pysrt  # Add this import for SRT support
 import concurrent.futures
 from typing import List, Dict
 import math
@@ -13,18 +14,31 @@ from config import *
 
 # Setup Config
 config = {
-    "input": INPUT_VTT
+    "input": INPUT
 }
 
 # Prepare Transcript
-## Read and parse the VTT file
+## Read and parse the VTT or SRT file
 captions = []
-for caption in webvtt.read(config['input']):
-    captions.append({
-        "start": caption.start,
-        "end": caption.end,
-        "text": caption.text
-    })
+file_extension = os.path.splitext(config['input'])[1].lower()
+
+if file_extension == '.vtt':
+    for caption in webvtt.read(config['input']):
+        captions.append({
+            "start": caption.start,
+            "end": caption.end,
+            "text": caption.text
+        })
+elif file_extension == '.srt':
+    subs = pysrt.open(config['input'])
+    for sub in subs:
+        captions.append({
+            "start": str(sub.start),
+            "end": str(sub.end),
+            "text": sub.text.replace('\n', ' ')
+        })
+else:
+    raise ValueError(f"Unsupported file type: {file_extension}. Only .vtt and .srt files are supported.")
 
 def captions_to_long_text(captions):
     # Join all the text parts from the captions
@@ -58,7 +72,7 @@ formatted_text_and_ts = captions_to_long_text_with_ts(captions)
 # Load Gemini API key from environment variable
 os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
 flash_llm = ChatGoogleGenerativeAI(
-    model="gemini-2.0-flash-exp",
+    model="gemini-1.5-flash",
     temperature=0.7,
     max_tokens=None,
     timeout=None,
@@ -107,7 +121,7 @@ parser = JsonOutputParser(pydantic_object=BlogOutline)
 
 # Initialize the model
 pro_llm = ChatGoogleGenerativeAI(
-    model="gemini-1.5-pro",
+    model="gemini-1.5-flash",
     temperature=0.7,
     max_tokens=None,
     timeout=None,
@@ -191,51 +205,130 @@ def process_transcript_batch(transcript_text, previous_context="", batch_number=
         "previous_context": previous_context
     })
 
+def optimize_sections(sections):
+    """
+    Optimize sections based on configuration parameters.
+    
+    Args:
+        sections: List of section dictionaries
+    
+    Returns:
+        List of optimized sections
+    """
+    print("\n==== Starting Section Optimization ====")
+    print(f"Total sections before optimization: {len(sections)}")
+    print(f"Maximum sections allowed: {MAX_SECTIONS}")
+    
+    if len(sections) <= MAX_SECTIONS:
+        print("No optimization needed. Sections are within the limit.")
+        return sections
+        
+    # Convert time strings to seconds for easier calculation
+    def time_to_seconds(time_str):
+        try:
+            # Handle comma-separated milliseconds format
+            time_str = time_str.replace(',', '.')
+            
+            # Split into components
+            if '.' in time_str:
+                main_time, ms = time_str.split('.')
+            else:
+                main_time = time_str
+                ms = '0'
+            
+            # Convert HH:MM:SS to seconds
+            h, m, s = map(float, main_time.split(':'))
+            total_seconds = h * 3600 + m * 60 + s + float('0.' + ms)
+            return total_seconds
+        except Exception as e:
+            print(f"Error parsing time {time_str}: {str(e)}")
+            return 0
+        
+    def seconds_to_time(seconds):
+        h = int(seconds // 3600)
+        m = int((seconds % 3600) // 60)
+        s = int(seconds % 60)
+        ms = int((seconds % 1) * 1000)
+        return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
+    
+    # Calculate duration and importance for each section
+    sections_with_metrics = []
+    print("\nCalculating section metrics:")
+    for i, section in enumerate(sections, 1):
+        start_seconds = time_to_seconds(section['start_time'])
+        end_seconds = time_to_seconds(section['end_time'])
+        duration = end_seconds - start_seconds
+        
+        # Calculate importance based on summary length and duration
+        importance = len(section['summary']) * (duration / TARGET_SECTION_DURATION) if duration > 0 else 0
+        
+        sections_with_metrics.append({
+            **section,
+            'duration': duration,
+            'importance': importance
+        })
+        
+        print(f"Section {i}: Start={section['start_time']}, End={section['end_time']}, "
+              f"Duration={duration:.2f}s, Importance={importance:.2f}")
+    
+    # Sort sections by importance
+    print("\nSorting sections by importance...")
+    sorted_sections = sorted(sections_with_metrics, key=lambda x: x['importance'], reverse=True)
+    
+    # Take top MAX_SECTIONS sections and sort them by start time
+    print(f"\nSelecting top {MAX_SECTIONS} most important sections:")
+    optimized_sections = sorted(sorted_sections[:MAX_SECTIONS], 
+                              key=lambda x: time_to_seconds(x['start_time']))
+    
+    # Log the selected sections
+    print("\nSelected Optimized Sections:")
+    for i, section in enumerate(optimized_sections, 1):
+        print(f"Section {i}: Start={section['start_time']}, End={section['end_time']}, "
+              f"Title='{section['title']}'")
+    
+    # Clean up the sections before returning
+    for section in optimized_sections:
+        del section['duration']
+        del section['importance']
+    
+    print(f"\n==== Optimization Complete ====")
+    print(f"Total sections after optimization: {len(optimized_sections)}")
+    
+    return optimized_sections
+
 # Process transcript in batches
 batch_size = calculate_optimal_batch_size(captions)
+print(f"\n==== Batch Processing Configuration ====")
+print(f"Total captions: {len(captions)}")
+print(f"Optimal batch size: {batch_size}")
+
 caption_batches = [captions[i:i + batch_size] for i in range(0, len(captions), batch_size)]
+print(f"Number of batches: {len(caption_batches)}")
+
 previous_context = ""
+
+# Process each batch and collect all sections
 all_sections = []
-
-# Set up parallel processing
-max_workers = min(4, len(caption_batches))  # Limit max workers to avoid API rate limits
-with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-    # Prepare batch information for parallel processing
-    batch_infos = [
-        (batch, previous_context, i+1) 
-        for i, batch in enumerate(caption_batches)
-    ]
+print("\n==== Starting Batch Processing ====")
+for i, batch in enumerate(caption_batches, 1):
+    print(f"\nProcessing Batch {i}/{len(caption_batches)}")
+    print(f"Batch size: {len(batch)} captions")
     
-    # Process batches in parallel
-    future_to_batch = {
-        executor.submit(process_batch_with_context, batch_info): batch_info[2]
-        for batch_info in batch_infos
-    }
+    batch_info = (batch, previous_context, i)
+    result = process_batch_with_context(batch_info)
     
-    # Collect results in order
-    for future in concurrent.futures.as_completed(future_to_batch):
-        batch_num = future_to_batch[future]
-        try:
-            batch_result = future.result()
-            print(f"\nCompleted batch {batch_num}/{len(caption_batches)}")
-            all_sections.extend(batch_result["outline"])
-            # Update context with summaries from this batch
-            previous_context = "\n".join(
-                section["summary"] for section in batch_result["outline"]
-            )
-        except Exception as e:
-            print(f"Batch {batch_num} generated an exception: {str(e)}")
-            continue
+    print(f"Sections generated in batch {i}: {len(result['outline'])}")
+    all_sections.extend(result['outline'])
+    
+    # Update context with summaries from this batch
+    previous_context = captions_to_long_text(batch)
 
-planning_result = {"outline": all_sections}
+print("\n==== Batch Processing Complete ====")
+print(f"Total sections generated: {len(all_sections)}")
 
-# Print the generated blog outline plan
-print("==== Generated Blog Outline ====")
-print(planning_result)
-
-# Save the planning result to a JSON file
-with open(OUTPUT_JSON, 'w') as f:
-    json.dump(planning_result, f, indent=2)
+# Optimize sections based on configuration
+print("\n==== Preparing for Section Optimization ====")
+optimized_sections = optimize_sections(all_sections)
 
 # Generate Each Section
 section_prompt = PromptTemplate(
@@ -252,7 +345,7 @@ section_prompt = PromptTemplate(
     """
 )
 
-sections = planning_result['outline']
+sections = optimized_sections
 overall_summary = overview_sum_content # Example overall summary. Replace with a dynamic one if needed.
 previous_summary = ""
 blog_sections = []
